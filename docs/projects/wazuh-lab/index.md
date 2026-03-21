@@ -40,67 +40,24 @@ Initial monitored systems include:
 
 ## Implementation Overview
 
-The deployment was completed in the following stages:
+The project was implemented in the following phases:
 
-1. Provisioning a dedicated Ubuntu Server VM on Proxmox
-2. Installing Wazuh as a single-node all-in-one deployment
-3. Validating dashboard, server, and indexer availability
-4. Configuring firewall rules for agent communication
-5. Onboarding the first Windows and Linux agents
-6. Verifying active agents and operating system visibility in the dashboard
+1. **[Core Deployment](core-deployment.md)** — provisioning the Wazuh server VM, installing all components, configuring network access, and onboarding Windows and Linux agents
+2. **[Integrations](integrations.md)** — VirusTotal integration for file hash enrichment and automated active response for malicious file removal
+3. **[Telemetry](telemetry.md)** — Sysmon for Windows and Linux, AD audit policy hardening, Docker event monitoring, and CIS Docker benchmark checks
+4. **[Detection Rules](detection-rules.md)** — custom rules for SharpHound AD reconnaissance and PowerShell abuse techniques, with MITRE ATT&CK mapping
+5. **[Dashboards](dashboards.md)** — Active Directory security, VirusTotal activity, and anomaly detection dashboards
 
-### Network and Access Control
-
-To allow communication between agents and the Wazuh server, I reviewed the required Wazuh ports and created firewall rules accordingly.
-
-For this setup:
-
-* agent communication is allowed from **VLAN 2 (Home)**
-* additional lab systems communicate from **VLAN 10 (Lab-Security)**, where the Wazuh server is also located
-* dashboard/management access is restricted to my own workstation `home-home-paw-01`
-
-
-![Wazuh agent traffic network object](./assets/screenshots/network-firewall-object.png "Wazuh agent traffic network object"){ width="1100" .zoomable loading=lazy }
-/// caption
-Wazuh agent traffic network object
-///
-
-![Wazuh agent firewall rules](./assets/screenshots/wazuh-agent-firewall-rules.png "Wazuh agent firewall rules"){ width="1100" .zoomable loading=lazy }
-/// caption
-Wazuh agent firewall rules
-///
-
-**Validation**
-
-The following points were successfully validated:
-
-* Wazuh Dashboard, Server, and Indexer were installed and reachable
-* multiple Windows and Linux agents were enrolled successfully
-* active agent status was visible in the dashboard
-* operating system identification, configuration assessment, software identification etc. worked correctly
-
-![Wazuh Agent Overview](./assets/screenshots/active-agents.png "Wazuh Agent Dashboard Overview"){ width="1100" .zoomable loading=lazy }
-/// caption
-Wazuh Agent Overview
-///
+Each phase is documented on its own page with configuration details, validation steps, and observations.
 
 ## Challenges and Lessons Learned
 
 Some of the main issues during deployment were:
 
-* After creating VLAN 10 (Lab-Security) for the lab environment, systems on that network were unable to reach the internet for updates. The root cause was a missing static route on the upstream gateway (Fritzbox). Because the network path is Internet → Fritzbox → UniFi Gateway → internal VLANs, the Fritzbox had no return route for the new 192.168.10.0/24 subnet. Adding a static route on the Fritzbox pointing to the UniFi Gateway resolved the issue. This reinforced the importance of validating routing tables across all network hops when adding new segments, not just the local gateway.
-* I also spent some time troubleshooting the missing Docker events till I came across the bug explained in the [Docker section](telemetry.md#docker-integration)
+??? warning "VLAN routing issue — missing static route on Fritzbox"
 
-## Current Scope
+    After creating VLAN 10 (Lab-Security) for the lab environment, systems on that network were unable to reach the internet for updates. The root cause was a missing static route on the upstream gateway (Fritzbox). Because the network path is Internet → Fritzbox → UniFi Gateway → internal VLANs, the Fritzbox had no return route for the new 192.168.10.0/24 subnet. Adding a static route on the Fritzbox pointing to the UniFi Gateway resolved the issue. This reinforced the importance of validating routing tables across all network hops when adding new segments, not just the local gateway.
 
-This repository currently focuses on:
+??? warning "Missing Docker events — known bug"
 
-* initial Wazuh deployment and validation
-* network access control for agent communication
-* Windows and Linux agent onboarding
-* early detection engineering and telemetry improvements
-* VirusTotal integration and active response testing
-* Sysmon for Windows and Linux
-* Docker event monitoring and CIS benchmark checks
-* custom detection rules
-* dashboard development
+    I also spent some time troubleshooting the missing Docker events till I came across the bug explained in the [Docker section](telemetry.md#docker-integration)

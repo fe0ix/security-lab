@@ -12,34 +12,35 @@ The goal of the lab is to build, test, and document practical security implement
 
 This documentation is intended to show how projects were planned, implemented, tested, and reviewed, with an emphasis on technical clarity and practical value.
 
+!!! info "Public Disclosure and Sanitization"
+
+    This is a public documentation site. Sensitive information such as credentials, API keys, relevant personal data and environment-specific details is removed, generalized, or sanitized before publication.
+
+!!! info "AI Assistance Disclosure"
+
+    AI tools were used in parts of the documentation workflow for brainstorming, wording support, and draft assistance. All published content was reviewed, adapted, and validated by me before release.
+
 ## What This Documentation Covers
 
-The Security Lab documentation focuses on topics such as:
+<div class="grid cards" markdown>
 
-- SIEM deployment and alert validation
-- Endpoint visibility and telemetry improvement
-- Active Directory monitoring and log collection
-- Network segmentation and firewall policy design
-- Security workflow automation
-- Structured project documentation and evidence collection
+-   :material-server-security: __SIEM deployment and alert validation__
+-   :material-eye-outline: __Endpoint visibility and telemetry improvement__
+-   :material-chart-timeline: __Monitoring and log collection__
+-   :material-wall-fire: __Network segmentation and firewall policy design__
+-   :material-auto-mode: __Security workflow automation__
+-   :material-file-document-outline: __Structured project documentation__
 
-## Lab Environment
+</div>
 
-The lab is built as a small but practical environment for security testing and documentation. It includes:
+## Current Projects
 
-- Virtualized infrastructure for isolated lab workloads
-- Storage and supporting self-hosted services
-- Segmented networking for controlled communication between systems
-- Windows-based systems for logging, monitoring, and detection use cases
-- Centralized monitoring and alerting through Wazuh
+<div class="grid cards" markdown>
 
-The exact setup may evolve over time, but the purpose remains the same: to create a realistic environment for learning, validation, and mainly security-focused projects.
+-   :wazuh: [__Wazuh Lab__](projects/wazuh-lab/index.md)
 
+    ---
 
-## Public Disclosure and Sanitization
+    Deployment and documentation of a dedicated Wazuh SIEM environment covering log collection, detection engineering, integrations, and custom dashboards.
 
-This is a public documentation site. Sensitive information such as credentials, API keys, relevant personal data and environment-specific details is removed, generalized, or sanitized before publication.
-
-## AI Assistance Disclosure
-
-AI tools were used in parts of the documentation workflow for brainstorming, wording support, and draft assistance. All published content was reviewed, adapted, and validated by me before release.
+</div>

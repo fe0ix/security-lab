@@ -52,7 +52,17 @@ Centralized Sysmon configuration result
 
 **AD audit policy configuration**
 
-To ensure sufficient visibility into Active Directory activity, I modified the Default Domain Policy to enable advanced audit logging as recommended by the [Malware Archaeology Windows Logging Cheat Sheet](https://static1.squarespace.com/static/552092d5e4b0661088167e5c/t/5c586681f4e1fced3ce1308b/1549297281905/Windows+Logging+Cheat+Sheet_ver_Feb_2019.pdf). Key changes included enabling audit events for account logon, logon/logoff, object access, privilege use, and process creation with command-line logging. These audit policies are a prerequisite for the detection rules implemented later — without them, Windows generates minimal security event telemetry by default.
+To ensure sufficient visibility into Active Directory activity, I modified the Default Domain Policy to enable advanced audit logging as recommended by the [Malware Archaeology Windows Logging Cheat Sheet](https://static1.squarespace.com/static/552092d5e4b0661088167e5c/t/5c586681f4e1fced3ce1308b/1549297281905/Windows+Logging+Cheat+Sheet_ver_Feb_2019.pdf). Key changes included enabling audit events for:
+
+- Account logon
+- Logon/logoff 
+- Object access 
+- Privilege use
+- Process creation with command-line logging
+
+!!! info
+
+    These audit policies are a prerequisite for the detection rules implemented later — without them, Windows generates minimal security event telemetry by default.
 
 ![AD audit policy configuration](./assets/screenshots/auditpolicy-settings-gpo.png){ width="1100" .zoomable loading=lazy }
 /// caption
@@ -645,9 +655,9 @@ docker start wazuh-test
 docker rm -f wazuh-test
 ```
 
-**Known issue and workaround**
+!!! bug
 
-At the time of implementation, Wazuh `v4.14.3` had a bug where [not all Docker events triggered alerts](https://github.com/wazuh/wazuh/pull/34376#pullrequestreview-3762003381). For example, container stop and pause events were not consistently visible. Because the fix was only available in the `v4.14.4` release candidate, I did not move to the pre-release version. Instead, I manually applied the upstream rule changes by replacing `ruleset/rules/0560-docker_integration_rules.xml` with the updated [version from the related pull request](https://github.com/wazuh/wazuh/pull/34376/changes/8dc43bf1b3fc20996495483e325a27f785bdb2e6#diff-9bc8c9f333f88951c84e1195a8cdd9e259958fe40c1ef3d7132ea8698de67d12).
+    At the time of implementation, Wazuh `v4.14.3` had a bug where [not all Docker events triggered alerts](https://github.com/wazuh/wazuh/pull/34376#pullrequestreview-3762003381). For example, container stop and pause events were not consistently visible. Because the fix was only available in the `v4.14.4` release candidate, I did not move to the pre-release version. Instead, I manually applied the upstream rule changes by replacing `ruleset/rules/0560-docker_integration_rules.xml` with the updated [version from the related pull request](https://github.com/wazuh/wazuh/pull/34376/changes/8dc43bf1b3fc20996495483e325a27f785bdb2e6#diff-9bc8c9f333f88951c84e1195a8cdd9e259958fe40c1ef3d7132ea8698de67d12).
 
 ![Docker Event validation](./assets/screenshots/docker-event-test.png){ width="1100" .zoomable loading=lazy }
 /// caption

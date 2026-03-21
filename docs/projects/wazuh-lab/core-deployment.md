@@ -36,7 +36,7 @@ The Wazuh indexer responded on port `9200`, the node was visible as `node-1`, an
 
 After the indexer was working, I installed the Wazuh server component.
 
-### Key command
+#### Key command
 
 ```shell
 sudo bash wazuh-install.sh --wazuh-server wazuh-1
@@ -75,20 +75,30 @@ https://192.168.10.2:443
 
 ## Security considerations
 
-After deployment, I followed some steps of the [Securing the Wazuh server API](https://documentation.wazuh.com/current/user-manual/api/securing-api.html) guide and changed the credentials of the default accounts `wazuh` and `wazuh-wui`. In a production environment, additional hardening steps would include restricting indexer API access to the Wazuh server only, enforcing a TLS minimum version of 1.2, replacing the default self-signed certificate with a trusted one, and enabling audit logging on the indexer. Further steps would include hardening the underlying OS against CIS benchmarks and applying [RBAC](https://documentation.wazuh.com/current/user-manual/api/rbac/index.html#role-based-access-control) with least-privilege access to the Wazuh API. These were not implemented in this lab as the environment is isolated within a dedicated VLAN with firewall-restricted access.
+After deployment, the credentials for the default accounts ``wazuh`` and ``wazuh-wui`` were changed by following the [Securing the Wazuh server API](https://documentation.wazuh.com/current/user-manual/api/securing-api.html) guide.
+
+!!! info
+
+    This lab environment is isolated within a dedicated VLAN with firewall-restricted access. Several hardening steps that would be required in production were therefore not applied here.
+
+In a production environment, additional hardening steps would include:
+
+- Restricting indexer API access to the Wazuh server only
+- Enforcing a minimum TLS version of 1.2
+- Replacing the default self-signed certificate with a trusted certificate
+- Enabling audit logging on the indexer
+- Hardening the underlying OS against CIS benchmarks
+- Applying [RBAC](https://documentation.wazuh.com/current/user-manual/api/rbac/index.html#role-based-access-control) with least-privilege access to the Wazuh API
 
 ***
 
 ## Network and Firewall Configuration
 
-Before onboarding the first agents, I reviewed the required ports for communication between Wazuh components and agents.
+Before onboarding the first agents, I reviewed the [required ports](https://documentation.wazuh.com/current/getting-started/architecture.html#required-ports) for communication between Wazuh components and agents.
 
-For this setup:
+!!! info
 
-* all Wazuh core components run on the same VM
-* no separate firewall rules were required between the internal Wazuh components
-* only agent-to-server communication needed to be allowed
-* dashboard access was restricted to my own workstation
+    All Wazuh core components (Indexer, Server, Dashboard) run on the same VM. No internal firewall rules between components were required — only agent-to-server communication needed to be explicitly allowed.
 
 ### Network overview
 

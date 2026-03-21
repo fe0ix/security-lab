@@ -139,7 +139,14 @@ SharpHound execution alerts
 
 **What I noticed about false positives**
 
-Rule 111151 relies on the SpecterOps vendor name in the PE header — an attacker could recompile SharpHound with modified metadata to bypass this. Rule 111154 (LDAP on port 389) triggers on any executable making LDAP queries, which happens with legitimate AD-integrated tools all the time — that's why the level is set to 3. Rule 111157 (null session enumeration) could fire during normal admin activity involving named pipes. In a production environment, you'd want exclusions for known admin workstations and service accounts.
+Rule 111151 relies on the SpecterOps vendor name in the PE header — an attacker could recompile SharpHound with modified metadata to bypass this. 
+
+Rule 111154 (LDAP on port 389) triggers on any executable making LDAP queries, which happens with legitimate AD-integrated tools all the time — that's why the level is set to 3. 
+
+
+Rule 111157 (null session enumeration) could fire during normal admin activity involving named pipes. In a production environment, you'd want exclusions for known admin workstations and service accounts.
+
+
 
 ---
 
@@ -247,7 +254,9 @@ I followed the Wazuh [blog post](https://wazuh.com/blog/detecting-powershell-exp
 - PowerShell Script Block Logging and Module Logging enabled on the endpoints
 - Wazuh agent configured to collect from the `Microsoft-Windows-PowerShell/Operational` event channel
 
-Without these audit settings, PowerShell only generates minimal event data and the rules won't have anything to match on.
+!!! warning
+
+    Without these audit settings, PowerShell only generates minimal event data and the rules won't have anything to match on.
 
 **Testing**
 

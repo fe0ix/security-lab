@@ -43,7 +43,9 @@ This dashboard is designed to surface unusual activity across all monitored syst
 * **Unusual process executions** — processes launched from non-standard directories (excluding `C:\Windows\*`, `C:\Program Files\*`, and standard Linux paths), which can indicate attacker tools or malware staged in temp directories
 * **Rare processes per host** — least-frequently seen processes on Windows and Linux systems in the last 24 hours, split into separate panels due to different Sysmon field names per OS
 
-The unusual process and rare process panels use exclusion filters to suppress known system binaries and focus on activity that deviates from the baseline. In a clean environment, these tables will be mostly empty — which is the expected state. When an anomaly occurs (such as a binary executed from `/dev/shm` or `C:\tmp`), it surfaces immediately.
+!!! info
+
+    The unusual process and rare process panels use exclusion filters to suppress known system binaries and focus on activity that deviates from the baseline. In a clean environment, these tables will be mostly empty — which is the expected state. When an anomaly occurs (such as a binary executed from `/dev/shm` or `C:\tmp`), it surfaces immediately.
 
 ![Anomaly Dashboard](./assets/screenshots/anomaly-dashboard.png){ width="1100" .zoomable loading=lazy }
 /// caption
