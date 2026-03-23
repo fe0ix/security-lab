@@ -130,7 +130,7 @@ I followed the Wazuh [blog post](https://wazuh.com/blog/detecting-sharphound-act
 
 **Testing**
 
-I downloaded the precompiled SharpHound binary from the [SharpHound GitHub repository](https://github.com/SpecterOps/SharpHound/releases) and ran it on the domain-joined client with `--CollectionMethods All --Loop`. This triggered alerts across multiple detection stages: binary execution (111151), LDAP queries to the DC (111154), JSON file creation (111155), and zip archive creation (111156).
+I downloaded the precompiled SharpHound binary from the [SharpHound GitHub repository](https://github.com/SpecterOps/SharpHound/releases) and ran it on the dc with `--CollectionMethods All --Loop`. This triggered alerts across multiple detection stages: binary execution (111151), LDAP queries (111154), JSON file creation (111155), and zip archive creation (111156).
 
 ![Results of executing SharpHound after Rule implementation](./assets/screenshots/sharphound-result.png){ width="1100" .zoomable loading=lazy }
 /// caption
@@ -143,10 +143,7 @@ Rule 111151 relies on the SpecterOps vendor name in the PE header — an attacke
 
 Rule 111154 (LDAP on port 389) triggers on any executable making LDAP queries, which happens with legitimate AD-integrated tools all the time — that's why the level is set to 3. 
 
-
-Rule 111157 (null session enumeration) could fire during normal admin activity involving named pipes. In a production environment, you'd want exclusions for known admin workstations and service accounts.
-
-
+Rule 111157 (null session enumeration) could be created from a normal admin activity involving named pipes. In a production environment, you'd want exclusions for known admin workstations and service accounts.
 
 ---
 
@@ -275,7 +272,11 @@ PowerShell download detection
 
 **What I noticed about false positives**
 
-Rule 100205 (ExecutionPolicy bypass) will fire on legitimate admin scripts that use `-ExecutionPolicy Bypass`. Rule 100206 (Invoke-WebRequest) triggers on any PowerShell web download, including update scripts. In production, both would need exclusions for known script paths and service accounts. Rule 100203 (offensive cmdlet list) is more targeted because the matched names come from specific offensive tools, but an attacker could rename functions to evade it.
+Rule 100205 (ExecutionPolicy bypass) will fire on legitimate admin scripts that use `-ExecutionPolicy Bypass`. 
+
+Rule 100206 (Invoke-WebRequest) triggers on any PowerShell web download, including update scripts. In production, both would need exclusions for known script paths and service accounts. 
+
+Rule 100203 (offensive cmdlet list) is more targeted because the matched names come from specific offensive tools, but an attacker could rename functions to evade it.
 
 ---
 

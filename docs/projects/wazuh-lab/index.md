@@ -43,9 +43,9 @@ Initial monitored systems include:
 The project was implemented in the following phases:
 
 1. **[Core Deployment](core-deployment.md)** — provisioning the Wazuh server VM, installing all components, configuring network access, and onboarding Windows and Linux agents
-2. **[Integrations](integrations.md)** — VirusTotal integration for file hash enrichment and automated active response for malicious file removal
 3. **[Telemetry](telemetry.md)** — Sysmon for Windows and Linux, AD audit policy hardening, Docker event monitoring, and CIS Docker benchmark checks
 4. **[Detection Rules](detection-rules.md)** — custom rules for SharpHound AD reconnaissance and PowerShell abuse techniques, with MITRE ATT&CK mapping
+2. **[Integrations](integrations.md)** — VirusTotal integration for file hash enrichment and automated active response for malicious file removal
 5. **[Dashboards](dashboards.md)** — Active Directory security, VirusTotal activity, and anomaly detection dashboards
 
 Each phase is documented on its own page with configuration details, validation steps, and observations.
