@@ -1,0 +1,104 @@
+---
+title: "Core Deployment"
+description: "Provisioning the Wazuh all-in-one server, installing all components, configuring network access, and onboarding Windows and Linux agents."
+---
+
+## Installation
+
+The Wazuh installation assistant handles all three components in sequence. Each step depends on the previous one completing successfully.
+
+<Steps>
+  <Step title="Wazuh indexer Installation">
+    Generate the configuration files and deploy the indexer on the Ubuntu VM.
+
+    ```shell
+    curl -sO https://packages.wazuh.com/4.14/wazuh-install.sh
+    curl -sO https://packages.wazuh.com/4.14/config.yml
+    nano config.yml
+    # Update the indexer, server, and dashboard IP addresses to match this VM
+    sudo bash wazuh-install.sh --generate-config-files
+    sudo bash wazuh-install.sh --wazuh-indexer node-1
+    sudo bash wazuh-install.sh --start-cluster
+    ```
+
+    Validate the indexer is reachable and the cluster started:
+
+    ```shell
+    sudo tar -axf wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt -O | grep -P "\'admin\'" -A 1
+    curl -k -u admin https://192.168.10.2:9200
+    curl -k -u admin https://192.168.10.2:9200/_cat/nodes?v
+    ```
+
+    The indexer responded on port `9200`, `node-1` was visible, and the cluster initialized successfully.
+  </Step>
+
+  <Step title="Wazuh server Installation">
+    ```shell
+    sudo bash wazuh-install.sh --wazuh-server wazuh-1
+    ```
+
+    This installs the Wazuh manager, configures vulnerability detection, installs Filebeat, and starts all services automatically.
+  </Step>
+
+  <Step title="Wazuh dashboard Installation">
+    ```shell
+    sudo bash wazuh-install.sh --wazuh-dashboard dashboard
+    ```
+
+    The web interface became available at `https://192.168.10.2:443` after installation completes.
+  </Step>
+</Steps>
+
+## Security considerations
+
+After deployment, the default `wazuh` and `wazuh-wui` account credentials were changed following the [Securing the Wazuh server API](https://documentation.wazuh.com/current/user-manual/api/securing-api.html) guide.
+
+<Info>
+This lab environment is isolated within a dedicated VLAN with firewall-restricted access. Several hardening steps that would be required in production were therefore not applied here.
+</Info>
+
+In a production environment, additional hardening steps would include restricting indexer API access to the Wazuh server only, enforcing TLS 1.2 minimum, replacing the self-signed certificate, enabling audit logging on the indexer, hardening the OS against CIS benchmarks, and applying [RBAC](https://documentation.wazuh.com/current/user-manual/api/rbac/index.html#role-based-access-control) with least-privilege access.
+
+## Network and firewall configuration
+
+Before onboarding agents, I reviewed the [required ports](https://documentation.wazuh.com/current/getting-started/architecture.html#required-ports) for agent-to-server communication.
+
+<Info>
+All Wazuh core components (Indexer, Server, Dashboard) run on the same VM. No internal firewall rules between components were required — only agent-to-server communication needed to be explicitly allowed.
+</Info>
+
+VLAN 2 (Home) allows agent traffic to the Wazuh server. VLAN 10 (Lab-Security) contains the Wazuh VM itself and the additional lab systems.
+
+<Frame caption="Required ports for Wazuh agent communication">
+  ![Wazuh agent traffic network object](./assets/screenshots/network-firewall-object.png)
+</Frame>
+
+<Frame caption="Wazuh agent firewall rules">
+  ![Wazuh agent firewall rules](./assets/screenshots/agent-firewall-rules.png)
+</Frame>
+
+## Agent deployment
+
+<Tabs>
+  <Tab title="Windows">
+    I deployed the first Windows agent on `home-home-paw-01` following the official [Windows agent deployment](https://documentation.wazuh.com/current/installation-guide/wazuh-agent/wazuh-agent-package-windows.html#deploying-wazuh-agents-on-windows-endpoints) guide. After installation and configuration, the agent connected to the manager and appeared in the dashboard.
+
+    <Frame caption="First Windows agent visible in Wazuh">
+      ![First Windows agent visible in Wazuh](./assets/screenshots/first-agent-windows-client.png)
+    </Frame>
+  </Tab>
+
+  <Tab title="Linux">
+    The [Linux agent deployment](https://documentation.wazuh.com/current/installation-guide/wazuh-agent/wazuh-agent-package-linux.html#deploying-wazuh-agents-on-linux-endpoints) process follows the same steps with the correct package selected for the target distribution and CPU architecture. The agent appeared successfully in the dashboard after installation.
+  </Tab>
+
+  <Tab title="Additional systems">
+    After the first successful deployments, the same onboarding steps were repeated for `home-lab-dc-01`, `home-lab-client-01`, and `home-lab-ubuntu-01`.
+
+    <Frame caption="Active agents overview">
+      ![Active agents overview](./assets/screenshots/active-agents.png)
+    </Frame>
+  </Tab>
+</Tabs>
+
+Manual deployment is straightforward for small environments. For larger scale, I would consider [Windows deployment via Group Policy](https://wazuh.com/blog/deploying-wazuh-agent-using-windows-gpo/) or [Linux deployment via Ansible](https://wazuh.com/blog/configuration-management-endpoints-using-ansible/).

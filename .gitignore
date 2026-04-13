@@ -1,0 +1,17 @@
+Thumbs.db
+.DS_Store
+site/
+.cache/
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.excalidraw
+*.zip
+CLAUDE.md
+Thumbs.db
+*agents*
+skills-lock.json
+.claude
+snippets

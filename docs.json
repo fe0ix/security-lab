@@ -1,0 +1,68 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "security-lab",
+  "colors": {
+    "primary": "#3763FE",
+    "light": "#638AFF",
+    "dark": "#121627"
+  },
+  "styling": {
+    "eyebrows": "breadcrumbs"
+  },
+  "favicon": "/favicon.svg",
+  "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Home",
+          "href": "/index",
+          "icon": "house"
+        }
+      ]
+    },
+    "groups": [
+      {
+        "group": "Projects",
+        "icon": "folder",
+        "pages": [
+          {
+            "group": "Wazuh Lab",
+            "root": "projects/wazuh-lab/index",
+            "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/wazuh.svg",
+            "pages": [
+              "projects/wazuh-lab/telemetry",
+              "projects/wazuh-lab/detection-rules",
+              "projects/wazuh-lab/integrations",
+              "projects/wazuh-lab/dashboards"
+            ]
+          },
+          {
+            "group": "Azure Cloud Sec Lab",
+            "root": "projects/azure-siem/index",
+            "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/svg/microsoft-azure.svg",
+            "pages": [
+              "projects/azure-siem/foundation",
+              "projects/azure-siem/endpoint-deployment",
+              "projects/azure-siem/data-connectors",
+              "projects/azure-siem/detection-engineering",
+              "projects/azure-siem/soar-playbooks",
+              "projects/azure-siem/security-posture-intelligence",
+              "projects/azure-siem/platform-comparison"
+             ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/mintlify",
+      "linkedin": "https://www.linkedin.com/in/felix-eberherr-79699423b"
+    }
+  }
+}
