@@ -6,7 +6,7 @@ description: "This page documents the automated incident response layer built on
 All playbooks authenticate using managed identities with appropriate permissions ([Microsoft Sentinel Responder](https://learn.microsoft.com/en-us/azure/sentinel/roles#built-in-azure-roles-for-microsoft-sentinel)) to the required Azure resources (log analytics workspace) — Again Claude Opus 4.6 was used to troubleshoot and optimize.
 
 <Info>
-If you are just interested in the complete result, skip to the [Kill Chain Validation](#kill-chain-validation) section to see the end-to-end flow in action. The following sections break down each playbook's logic, challenges and lessons learned during development.
+  If you are just interested in the complete result, skip to the [Kill Chain Validation](#kill-chain-validation) section to see the end-to-end flow in action. The following sections break down each playbook's logic, challenges and lessons learned during development.
 </Info>
 
 ---
@@ -15,7 +15,7 @@ If you are just interested in the complete result, skip to the [Kill Chain Valid
 
 Each enrichment source runs as an independent playbook. Reason: If VirusTotal's API goes down or something else does not function correctly, [AbuseIPDB](https://www.abuseipdb.com/) and [GreyNoise](https://www.greynoise.io/) enrichment should still work. Independent playbooks also mean independent rate limits, error handling, and run histories — making troubleshooting much easier and offer more flexibility.
 
-```
+```text
 Sentinel Incident Created
         │
         ▼
@@ -43,11 +43,10 @@ Playbooks were deployed to a separate resource group (`rg-sentinel-playbooks`) f
 **What it does:** Extracts IP entities from a Sentinel incident, queries the VirusTotal API for each IP, and writes a formatted enrichment comment to the incident with reputation data, detection counts, geolocation, and AS ownership.
 
 <Warning>
-For the initial deployment I used the VirusTotal Content Hub template with the built-in Logic Apps connector. Unfortunately I had issues with that config. Maybe I overlooked something but I couldn't find the exact Problem i think that the connector routes requests through Microsoft's API hub layer (`/api/v3/ip_addresses/connectorV2/...`), which seems to apply its own rate limiting on top of VirusTotal's limits. Every test returned `HTTP 429 - Quota exceeded` even though the VirusTotal dashboard showed only 28 of 500 daily requests consumed. The fix was replacing the managed connector with a direct HTTP action calling the VirusTotal API.
+  For the initial deployment I used the VirusTotal Content Hub template with the built-in Logic Apps connector. Unfortunately I had issues with that config. Maybe I overlooked something but I couldn't find the exact Problem i think that the connector routes requests through Microsoft's API hub layer (`/api/v3/ip_addresses/connectorV2/...`), which seems to apply its own rate limiting on top of VirusTotal's limits. Every test returned `HTTP 429 - Quota exceeded` even though the VirusTotal dashboard showed only 28 of 500 daily requests consumed. The fix was replacing the managed connector with a direct HTTP action calling the VirusTotal API.
 </Warning>
 
-
- The `malicious` count from vendor analysis is more reliable than the `reputation` score — it reflects how many of 70+ security vendors flagged the IP instead of community votes. The threshold of `> 0` is conservative; in production I'd raise it to `> 2` to filter out single-vendor false positives from overly aggressive feeds.
+The `malicious` count from vendor analysis is more reliable than the `reputation` score — it reflects how many of 70\+ security vendors flagged the IP instead of community votes. The threshold of `> 0` is conservative; in production I'd raise it to `> 2` to filter out single-vendor false positives from overly aggressive feeds.
 
 The For Each loop runs with concurrency set to 1 and includes a 15-second delay between API calls. VirusTotal's free tier allows 4 requests per minute and 500 per day — the delay keeps requests well within both limits even for incidents with multiple IPs.
 
@@ -55,22 +54,19 @@ The For Each loop runs with concurrency set to 1 and includes a 15-second delay 
   ![Enrich-IP-VirusTotal Logic App Designer Flow](./assets/screenshots/virustotal-ip-enrichment-logic-app-designer.png)
 </Frame>
 
-
 <Frame caption="Enrich-IP-VirusTotal Enrichment Result">
   ![Enrich-IP-VirusTotal Enrichment Result](./assets/screenshots/virustotal-ip-enrichment-data.png)
 </Frame>
-
 
 ---
 
 ## Enrich-IP-AbuseIPDB
 
-**What it does:** Queries AbuseIPDB for each IP entity in an incident, writes enrichment data to the incident, and escalates severity + adds tags when the abuse confidence score exceeds 80%.
+**What it does:** Queries AbuseIPDB for each IP entity in an incident, writes enrichment data to the incident, and escalates severity \+ adds tags when the abuse confidence score exceeds 80%.
 
 <Frame caption="Enrich-IP-AbuseIPDB Logic App Designer Flow">
   ![Enrich-IP-AbuseIPDB Logic App Designer Flow](./assets/screenshots/abuseIPDB-ip-enrichment-logic-app-designer.png)
 </Frame>
-
 
 The other enrichment playbooks only add comments. This one also modifies the incident — escalates severity and adds a tag — because AbuseIPDB's confidence score is a direct, actionable signal. A score of 100% with 286 reports from distinct users is strong enough to justify automated escalation without analyst review.
 
@@ -80,16 +76,13 @@ The tag `high-risk-ip` enables queue filtering in the Sentinel incident view. An
   ![AbuseIPDB Scoring](./assets/screenshots/abuseipdb-scoring.png)
 </Frame>
 
-
 <Frame caption="Enrich-IP-AbuseIPDB Enrichment Result">
   ![Enrich-IP-AbuseIPDB Enrichment Result](./assets/screenshots/abuseipdb-enrichment-data.png)
 </Frame>
 
-
 <Info>
-The severity escalation can be found in the full incident timeline screenshot in the [Kill Chain Validation](#kill-chain-validation) section below, as it interacts with the isolation playbook's severity gate.
+  The severity escalation can be found in the full incident timeline screenshot in the [Kill Chain Validation](#kill-chain-validation) section below, as it interacts with the isolation playbook's severity gate.
 </Info>
-
 
 ---
 
@@ -104,11 +97,11 @@ GreyNoise answers a question the other two sources can't: "Is this IP scanning e
 </Frame>
 
 <Warning>
-**Handling 404 responses** - GreyNoise returns HTTP 404 for any IP it hasn't observed. Logic Apps treats non-200 responses as failures by default, which kills the rest of the flow. The fix was adding a status code check before attempting to parse the response body, with the 404 path producing its own enrichment comment rather than silently failing. The "NO DATA" comment includes an interpretation: if GreyNoise has never seen this IP scanning the internet and it's not a known service, then its presence is noteworthy.
+  **Handling 404 responses** - GreyNoise returns HTTP 404 for any IP it hasn't observed. Logic Apps treats non-200 responses as failures by default, which kills the rest of the flow. The fix was adding a status code check before attempting to parse the response body, with the 404 path producing its own enrichment comment rather than silently failing. The "NO DATA" comment includes an interpretation: if GreyNoise has never seen this IP scanning the internet and it's not a known service, then its presence is noteworthy.
 </Warning>
 
 <Warning>
-**Classification refinement** - Initially, the playbook only checked for `noise: true` to identify benign scanners. However, some IPs are classified as `noise: false` but have `riot: true`, indicating they're known but not noisy. Adding this additional check allows the playbook to recognize and label these known services accurately, reducing noise in the incident comments.
+  **Classification refinement** - Initially, the playbook only checked for `noise: true` to identify benign scanners. However, some IPs are classified as `noise: false` but have `riot: true`, indicating they're known but not noisy. Adding this additional check allows the playbook to recognize and label these known services accurately, reducing noise in the incident comments.
 </Warning>
 
 <Frame caption="Enrich-IP-GreyNoise Enrichment Result">
@@ -126,7 +119,6 @@ GreyNoise answers a question the other two sources can't: "Is this IP scanning e
 <Frame caption="Isolate-Endpoint-MDE Logic App Designer Flow">
   ![Isolate-Endpoint-MDE Logic App Designer Flow](./assets/screenshots/isolate-endpoint-MDE-logic-app-designer.png)
 </Frame>
-
 
 **Gate 1 — Watchlist check.** Before any isolation decision, the playbook queries the `HighValueAssets` watchlist. If the hostname is in the list, isolation is blocked and the incident gets a comment directing the analyst to review manually. In production, this watchlist would contain domain controllers, certificate authorities, jump servers, and executive devices.
 
@@ -160,13 +152,7 @@ New-MgServicePrincipalAppRoleAssignment `
 -ResourceId $mde.Id
 ```
 
-
 The `fc780465-2017-40d4-a0c5-307022471b92` is the static application ID for "WindowsDefenderATP" in Entra ID — this is a constant across all tenants. Additionally, the managed identity needs `Microsoft Sentinel Responder` on the workspace (for incident comments) and `Log Analytics Reader` on the workspace resource group (for the watchlist query).
-
-<Frame caption="Device Isolation Logic App designer">
-  ![Device Isolation Logic App designer](./assets/screenshots/device-isolation-logic-app-run.png)
-</Frame>
-
 
 ---
 
@@ -205,30 +191,34 @@ The full chain executed within 3 minutes of the incident being created:
   ![Full Kill Chain Result](./assets/screenshots/full-kill-chain-result.png)
 </Frame>
 
-
 <Frame caption="Device Isolation Result">
   ![Device Isolation Result](./assets/screenshots/device-isolation.png)
 </Frame>
-
 
 **Cross-source agreement.** In this kill chain run, all three enrichment sources converged on the same verdict for `185.220.101.34`:
 
 <Tabs>
   <Tab title="VirusTotal">
-    ![VirusTotal Result](./assets/screenshots/virustotal-ip-enrichment-expectation.png)
+    <Frame>
+      ![VirusTotal Result](./assets/screenshots/virustotal-ip-enrichment-expectation.png)
+    </Frame>
   </Tab>
   <Tab title="AbuseIPDB">
-    ![AbuseIPDB Result](./assets/screenshots/abuseipdb-ip-enrichment-expectation.png)
+    <Frame>
+      ![Abuse IPDB Ip Enrichment Expectation](/projects/azure-siem/assets/screenshots/abuseIPDB-ip-enrichment-expectation.png)
+    </Frame>
   </Tab>
   <Tab title="GreyNoise">
-    ![GreyNoise Result](./assets/screenshots/greynoise-ip-enrichment-expectation.png)
+    <Frame>
+      ![GreyNoise Result](./assets/screenshots/greynoise-ip-enrichment-expectation.png)
+    </Frame>
   </Tab>
 </Tabs>
 
-All three sources independently identified this IP as a Tor exit node. This is the ideal scenario for automated response: when multiple independent intelligence sources agree, the confidence level is high enough to act without analyst/human review. 
+All three sources independently identified this IP as a Tor exit node. This is the ideal scenario for automated response: when multiple independent intelligence sources agree, the confidence level is high enough to act without analyst/human review.
 
 <Note>
-In this Lab I only created the isolation automation on basis of the AbuseIPDB confidence score. In a production environment, I would likely add additional conditions to the isolation playbook to check for corroborating signals from VirusTotal and GreyNoise as well — for example, only isolate if AbuseIPDB confidence is above 80% AND VirusTotal has at least 3 vendor detections + one suspicious file hash AND GreyNoise classifies it as noise rather than a known service. This multi-source agreement would further reduce the risk of false positives leading to disruptive automated actions.
+  In this Lab I only created the isolation automation on basis of the AbuseIPDB confidence score. In a production environment, I would likely add additional conditions to the isolation playbook to check for corroborating signals from VirusTotal and GreyNoise as well — for example, only isolate if AbuseIPDB confidence is above 80% AND VirusTotal has at least 3 vendor detections \+ one suspicious file hash AND GreyNoise classifies it as noise rather than a known service. This multi-source agreement would further reduce the risk of false positives leading to disruptive automated actions.
 </Note>
 
 ---
@@ -236,11 +226,11 @@ In this Lab I only created the isolation automation on basis of the AbuseIPDB co
 ## Challenges and Lessons Learned
 
 <Warning>
-**VirusTotal Connector Rate Limiting** - The built-in VirusTotal Logic Apps connector routes requests through Microsoft's API hub, which applies its own rate limiting independently of VirusTotal's API limits. Switching to a direct HTTP action with the `x-apikey` header bypasses this entirely and fixed my 429 errors when testing, with multiple IPs in the same incident.
+  **VirusTotal Connector Rate Limiting** - The built-in VirusTotal Logic Apps connector routes requests through Microsoft's API hub, which applies its own rate limiting independently of VirusTotal's API limits. Switching to a direct HTTP action bypasses this entirely and fixed my 429 errors when testing, with multiple IPs in the same incident.
 </Warning>
 
 <Warning>
-**GreyNoise 404 Handling** - GreyNoise returns HTTP 404 for any IP not in its dataset, which Logic Apps treats as a failure. The Parse JSON step after the HTTP call must have its "Run after" configuration set to execute on both success and failure, or the entire playbook stops at the first unknown IP.
+  **GreyNoise 404 Handling** - GreyNoise returns HTTP 404 for any IP not in its dataset, which Logic Apps treats as a failure. The Parse JSON step after the HTTP call must have its "Run after" configuration set to execute on both success and failure, or the entire playbook stops at the first unknown IP.
 </Warning>
 
 ---
@@ -250,7 +240,5 @@ In this Lab I only created the isolation automation on basis of the AbuseIPDB co
 This page was just a demo to validate the playbook/automation concept. In a production environment, I'd consider the following enhancements:
 
 - **Additional enrichment sources.** Adding more different sources for environment specific needs. There are many vendor specific templates and other useful Threat Intelligence resources in the Content Hub that could be leveraged with minimal customization, such as Microsoft Defender for Identity for on-premises AD signals or Microsoft Cloud App Security for SaaS app context.
-
 - **More granular response actions.** Instead of just isolating endpoints, playbooks could trigger a range of responses based on the severity and confidence level — for example, blocking an IP with Azure Firewall, disabling an Entra ID user or running an additional playbook which collects more information and creates a case in Microsoft Sentinel's built-in case management.
-
-- **Dynamic severity thresholds.** Instead of hardcoding thresholds (e.g., AbuseIPDB confidence > 80%), the playbook could query a watchlist or external configuration to determine the appropriate action based on organizational risk tolerance and current threat landscape.
+- **Dynamic severity thresholds.** Instead of hardcoding thresholds (e.g., AbuseIPDB confidence \> 80%), the playbook could query a watchlist or external configuration to determine the appropriate action based on organizational risk tolerance and current threat landscape.

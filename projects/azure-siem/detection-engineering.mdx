@@ -8,7 +8,7 @@ description: "This page documents 6 custom KQL analytics rules which I built in 
 </Frame>
 
 <Info>
-The [LSASS memory access rule (Rule 2)](#rule-2-lsass-memory-access) was tested with `Invoke-AtomicTest T1003.001` but Defender for Endpoint blocked the execution every time. That's actually the intended outcome — Defender's built-in LSASS protection acts as a preventive control, while this rule serves as a detective control for cases where that protection is bypassed or disabled. Therefore I only created the hunting query and did not turn it into an active analytics rule or perform a full analysis of the results.
+  The [LSASS memory access rule (Rule 2)](#rule-2-lsass-memory-access) was tested with `Invoke-AtomicTest T1003.001` but Defender for Endpoint blocked the execution every time. That's actually the intended outcome — Defender's built-in LSASS protection acts as a preventive control, while this rule serves as a detective control for cases where that protection is bypassed or disabled. Therefore I only created the hunting query and did not turn it into an active analytics rule or perform a full analysis of the results.
 </Info>
 
 ---
@@ -52,11 +52,9 @@ Attackers bypass this through obfuscation (string concatenation, variable substi
   ![Suspicious PowerShell Entity Mapping](./assets/screenshots/rule1-powershell-results-mapping.png)
 </Frame>
 
-
 <Frame caption="Suspicious PowerShell Results">
   ![Suspicious PowerShell Results](./assets/screenshots/rule1-powershell-results.png)
 </Frame>
-
 
 ---
 
@@ -96,7 +94,6 @@ I attempted to validate this with `Invoke-AtomicTest T1003.001` but Defender for
   ![LSASS Access Results](./assets/screenshots/rule2-lsass-results.png)
 </Frame>
 
-
 ---
 
 ## Rule 3: Scheduled Task Persistence ([T1053.005](https://attack.mitre.org/techniques/T1053/005/))
@@ -130,11 +127,9 @@ Attackers could bypass this with `Register-ScheduledTask` or WMI, which don't us
   ![Scheduled Task Mapping](./assets/screenshots/rule3-schtask-results-mapping.png)
 </Frame>
 
-
 <Frame caption="Scheduled Task Results">
   ![Scheduled Task Results](./assets/screenshots/rule3-schtask-results.png)
 </Frame>
-
 
 ---
 
@@ -180,7 +175,7 @@ DeviceProcessEvents
 
 This rule went through a few iterations. The initial version used a pattern list (similar to Rule 1), but during testing I found it needed a **two-stage `has_any` approach**: the first filter checks for the cmdlet, the second checks for a specific disable parameter. This ensures the command contains both — a `Set-MpPreference` that adjusts scan schedules won't trigger it, only one that disables a protection feature.
 
-The other lesson was about **checking both command line fields**. The Atomic Red Team test (T1562.001-16) creates `powershell.exe` → child `powershell.exe` → `conhost.exe`. The `Set-MpPreference` commands show up in `InitiatingProcessCommandLine` of the child processes, not `ProcessCommandLine`. My initial query only checked `ProcessCommandLine` and missed the event entirely,
+The other lesson was about **checking both command line fields**. The Atomic Red Team test (T1562.001-16) creates `powershell.exe` → child `powershell.exe` → `conhost.exe`. The `Set-MpPreference` commands show up in `InitiatingProcessCommandLine` of the child processes, not `ProcessCommandLine`. My initial query only checked `ProcessCommandLine` and missed the event entirely.
 
 Service accounts were excluded because `SenseIR.exe` (Defender's own investigation component) legitimately runs PowerShell with Defender-related paths.
 
@@ -190,17 +185,15 @@ Defender's tamper protection prevents most of these commands from succeeding, bu
   ![Defender Tampering Mapping](./assets/screenshots/rule4-defender-tampering-mapping.png)
 </Frame>
 
-
 <Frame caption="Defender Tampering Results">
   ![Defender Tampering Results](./assets/screenshots/rule4-defender-tampering-results.png)
 </Frame>
-
 
 ---
 
 ## Rule 5: Azure High-Privilege Role Assignment ([T1098](https://attack.mitre.org/techniques/T1098/))
 
-**What it detects:** Assignment of high-privilege Azure RBAC roles (Owner, Contributor, User Access Administrator) — covering both direct role assignments and PIM eligible assignments.
+**What it detects:** Assignment of high-privilege Azure RBAC roles (Owner, Contributor, User Access Administrator) — covering both direct role assignments and PIM assignments.
 
 ```kql
 let high_priv_role_ids = dynamic([
@@ -244,25 +237,16 @@ AzureActivity
 This rule required the most troubleshooting. Three problems came up during development:
 
 <Warning>
-**Problem 1 — Different events for PIM vs. direct assignments**
-
-My initial query only matched `roleAssignments/write`, but when I tested by assigning Contributor through the Azure Portal, it used PIM and generated `roleEligibilityScheduleRequests/write` instead. The query now covers both paths.
+  **Problem 1 — Different events for PIM vs. direct assignments -** My initial query only matched `roleAssignments/write`, but when I tested by assigning Contributor through the Azure Portal, it used PIM and generated `roleEligibilityScheduleRequests/write` instead. The query now covers both paths.
 </Warning>
-
 
 <Warning>
-**Problem 2 — Role names aren't in the event data**
-
-Direct RBAC assignments only contain the role definition GUID — not "Contributor". My original `has_any ("Contributor")` filter matched nothing. The fix was extracting the GUID with regex and mapping it to a human-readable name via a `datatable` lookup.
+  **Problem 2 — Role names aren't in the event data -** Direct RBAC assignments only contain the role definition GUID — not "Contributor". My original `has_any ("Contributor")` filter matched nothing. The fix was extracting the GUID with regex and mapping it to a human-readable name via a `datatable` lookup.
 </Warning>
-
 
 <Warning>
-**Problem 3 — Target user identification differs by assignment type**
-
-PIM responses include `expandedProperties` with the user's display name. Direct assignments don't — they only produce a `PrincipalId` GUID. The query extracts both and shows whichever is available.
+  **Problem 3 — Target user identification differs by assignment type -** PIM responses include `expandedProperties` with the user's display name. Direct assignments don't — they only produce a `PrincipalId` GUID. The query extracts both and shows whichever is available.
 </Warning>
-
 
 This rule operates on the Azure control plane rather than OS-level events, demonstrating detection across multiple telemetry layers. The 30-minute lookup period is longer than endpoint rules because Azure Activity events can take several minutes to propagate.
 
@@ -272,11 +256,9 @@ The main gap is Entra ID directory role assignments (e.g., Global Administrator 
   ![Privilege Escalation Mapping](./assets/screenshots/rule5-privilege-escalation-mapping.png)
 </Frame>
 
-
 <Frame caption="Privilege Escalation Results">
   ![Privilege Escalation Results](./assets/screenshots/rule5-privilege-escalation-results.png)
 </Frame>
-
 
 ---
 
@@ -342,28 +324,26 @@ DeviceNetworkEvents
 This rule was redesigned from scratch during testing. Three things broke the original version:
 
 <Warning>
-**`SentBytes` column does not exist** - My initial design detected exfiltration by volume — aggregate bytes sent per process over a time window. When I tested it, the query failed because [`DeviceNetworkEvents` has no byte-level columns](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-devicenetworkevents-table). No `SentBytes`, no `ReceivedBytes`. The rule was rebuilt around connection-count anomalies instead, which is still a valid exfiltration indicator.
+  **`SentBytes` column does not exist** - My initial design detected exfiltration by volume — aggregate bytes sent per process over a time window. When I tested it, the query failed because [`DeviceNetworkEvents` has no byte-level columns](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-devicenetworkevents-table). No `SentBytes`, no `ReceivedBytes`. The rule was rebuilt around connection-count anomalies instead, which is still a valid exfiltration indicator.
 </Warning>
 
 <Warning>
-**MDE streamlined connectivity masks the real destination** - When testing with `curl.exe`, all connections showed `RemoteIP: 127.0.0.1` instead of the actual external IP. MDE's streamlined device connectivity proxies outbound connections through the sensor process on localhost. `Invoke-WebRequest` didn't have this problem — it handles connections differently. The loopback filter (`RemoteIP !startswith "127."`) is responsible for this.
+  **MDE streamlined connectivity masks the real destination** - When testing with `curl.exe`, all connections showed `RemoteIP: 127.0.0.1` instead of the actual external IP. MDE's streamlined device connectivity proxies outbound connections through the sensor process on localhost. `Invoke-WebRequest` didn't have this problem — it handles connections differently. The loopback filter (`RemoteIP !startswith "127."`) is responsible for this.
 </Warning>
 
 <Warning>
-**Initial output was all noise** - The first working query returned hundreds of rows dominated by `svchost.exe` and `msedgewebview2.exe` connecting to Microsoft domains. Building the `known_noise` and `trusted_processes` exclusion lists from actual observed baseline traffic was essential to make the rule usable. The `AlertReason` field using `case()` was added to give analysts more context.
+  **Initial output was all noise** - The first working query returned hundreds of rows dominated by `svchost.exe` and `msedgewebview2.exe` connecting to Microsoft domains. Building the `known_noise` and `trusted_processes` exclusion lists from actual observed baseline traffic was essential to make the rule usable. The `AlertReason` field using `case()` was added to give analysts more context.
 </Warning>
 
-The thresholds are set low for lab testability (production: 50+ connections, 15+ distinct IPs). The main gap is slow exfiltration — one connection per hour to a legitimate cloud service won't trigger connection-frequency thresholds.
+The thresholds are set low for lab testability. The main gap is slow exfiltration — one connection per hour to a legitimate cloud service won't trigger connection-frequency thresholds.
 
 <Frame caption="Exfiltration Mapping">
   ![Exfiltration Mapping](./assets/screenshots/rule6-exfiltration-results-mapping.png)
 </Frame>
 
-
 <Frame caption="Exfiltration Results">
   ![Exfiltration Results](./assets/screenshots/rule6-exfiltration-results.png)
 </Frame>
-
 
 ---
 
@@ -404,7 +384,6 @@ This is static location matching — not behavioral analysis. An attacker using 
 <Frame caption="Anomalous Location Mapping">
   ![Anomalous Location Mapping](./assets/screenshots/rule7-anomalous-location-mapping.png)
 </Frame>
-
 
 <Frame caption="Anomalous Location Results">
   ![Anomalous Location Results](./assets/screenshots/rule7-anomalous-location-results.png)
